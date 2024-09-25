@@ -4,16 +4,17 @@ class MotorDC
 {
 private:
     /* data */
-    int pinPWM;
+    int pinA;
+    int pinB;
 public:
     MotorDC(/* args */);
     ~MotorDC();
-    void setup();
-    void set_speed(int pwm);
+    void setup(int pinA, int pinB);
+    void set_direction(int direction);
 };
 
 MotorDC::MotorDC(/* args */):
-pinPWM{0}
+pinA{0}, pinB{0}
 {
 }
 

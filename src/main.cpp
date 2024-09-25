@@ -45,6 +45,8 @@ ServoControl servo_control;
 #error This example is only avaliable for Arduino framework with serial transport.
 #endif
 
+#pragma region Micro ROS Objects
+
 std_msgs__msg__Int64 distL;
 rcl_publisher_t distL_publisher;
 
@@ -78,6 +80,8 @@ rcl_allocator_t allocator;
 rcl_node_t node;
 rcl_timer_t flow_timer;
 rcl_timer_t wire_timer;
+
+#pragma endregion
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
@@ -183,6 +187,7 @@ void gpioInit()
   // 12V dc motor cytron
   pinMode(ACT_A1_PIN, OUTPUT);
   pinMode(ACT_A2_PIN, OUTPUT);
+  motorDC_control.setup(ACT_A1_PIN);
 
   // lin-servo (pwm-out)
   pinMode(LINEAR_SERVO_PIN, OUTPUT);
@@ -396,6 +401,8 @@ void setup()
   Serial.begin(57600);
   SerialL.begin(9600);
   SerialR.begin(9600);
+
+  #pragma region Micro ROS Initialization
   set_microros_serial_transports(Serial);
 
   allocator = rcl_get_default_allocator();
@@ -405,6 +412,8 @@ void setup()
 
   // create node
   RCCHECK(rclc_node_init_default(&node, "micro_ros_node", "", &support));
+
+  #pragma endregion
 
   #pragma region Publishers
   // create publisher
@@ -476,6 +485,8 @@ void setup()
 
   #pragma endregion
 
+  #pragma region Executor Initializations
+  
   // create executor
   RCCHECK(rclc_executor_init(&executor, &support.context, 6, &allocator));
   RCCHECK(rclc_executor_add_subscription(&executor, &motor_subscriber, &motor_dir_msg, &motor_sub, ON_NEW_DATA));
@@ -486,6 +497,8 @@ void setup()
     &executor, &relay_service, &relay_req, &relay_res, relay_service_callback));
   RCCHECK(rclc_executor_add_timer(&executor, &flow_timer));
   RCCHECK(rclc_executor_add_timer(&executor, &wire_timer));
+  
+  #pragma endregion
 
   if(digitalPinToInterrupt(FLOW_SENSOR_PIN) == NOT_AN_INTERRUPT){
     debug("Pin ");
