@@ -1,5 +1,11 @@
 #include <Arduino.h>
 
+#ifdef USE_FREERTOS
+#define sleep(x) vTaskDelay(x)
+#else
+#define sleep(x) delay(x)
+#endif
+
 class DistanceSensor
 {
 private:

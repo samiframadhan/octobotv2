@@ -12,11 +12,13 @@ private:
 public:
     Relay(/* args */);
     ~Relay();
-    void setup();
+    void setup(int pin1, int pin2, int pin3, int pin4);
+    void setup(int pins[4]);
     void set_channels(int x);
 };
 
-Relay::Relay(/* args */)
+Relay::Relay(/* args */):
+pin_1{0}, pin_2{0}, pin_3{0}, pin_4{0}, interface{nullptr}
 {
 }
 

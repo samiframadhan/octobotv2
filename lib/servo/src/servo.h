@@ -12,7 +12,8 @@ public:
     void set_length(int x);
 };
 
-ServoControl::ServoControl(/* args */)
+ServoControl::ServoControl(/* args */):
+pinPWM{0}
 {
 }
 

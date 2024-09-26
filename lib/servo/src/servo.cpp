@@ -2,7 +2,8 @@
 #include <servo.h>
 
 void ServoControl::setup(){
-    // TODO: 
+    pinMode(pinPWM, OUTPUT);
+    analogWrite(pinPWM, LOW);
 }
 
 void ServoControl::set_length(int pwm){

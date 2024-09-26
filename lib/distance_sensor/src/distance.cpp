@@ -16,7 +16,7 @@ void DistanceSensor::setup_sensor(Stream &serialPort){
 int DistanceSensor::get_distance(){
     if (interface->available() > 0)
   {
-    delay(4);
+    sleep(4);
 
     if (interface->read() == 0xff)
     {

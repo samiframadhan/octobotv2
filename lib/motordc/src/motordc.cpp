@@ -2,9 +2,10 @@
 #include <motordc.h>
 
 void MotorDC::setup(){
-    // TODO: Implement HAL_TIM_Encoder_Init manually. Read docs
+    pinMode(pinPWM, OUTPUT);
+    analogWrite(pinPWM, LOW);
 }
 
 void MotorDC::set_speed(int pwm){
-    
+    analogWrite(pinPWM, pwm);
 }

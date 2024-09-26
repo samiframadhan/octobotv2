@@ -12,7 +12,8 @@ public:
     void set_speed(int pwm);
 };
 
-MotorDC::MotorDC(/* args */)
+MotorDC::MotorDC(/* args */):
+pinPWM{0}
 {
 }
 

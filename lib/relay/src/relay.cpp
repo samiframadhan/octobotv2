@@ -1,8 +1,24 @@
 #include <Arduino.h>
 #include <relay.h>
 
-void Relay::setup(){
+void Relay::setup(int pin1, int pin2, int pin3, int pin4){
     // TODO: Implement HAL_TIM_Encoder_Init manually. Read docs
+    pinMode(pin_1, OUTPUT);
+    pinMode(pin_2, OUTPUT);
+    pinMode(pin_3, OUTPUT);
+    pinMode(pin_4, OUTPUT);
+
+    digitalWrite(pin_1, LOW);
+    digitalWrite(pin_2, LOW);
+    digitalWrite(pin_3, LOW);
+    digitalWrite(pin_4, LOW);
+}
+
+void Relay::setup(int pins[4]){
+    for (size_t i = 0; i < 4; i++)
+    {
+        pinMode(pins[i], OUTPUT);
+    }
 }
 
 void Relay::set_channels(int cases){
