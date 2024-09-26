@@ -11,6 +11,7 @@
 #include <Arduino.h>
 
 #include <stm_include.h>
+// #include <FreeRTOS.h>
 
 #include <micro_ros_platformio.h>
 
@@ -27,6 +28,14 @@
 #include <stm_interface/srv/relay_control.h>
 #include <stm_interface/srv/motor_status.h>
 #include <stm_interface/srv/tool_status.h>
+
+#include <relay.h>
+#include <motordc.h>
+#include <servo.h>
+
+Relay relay_control;
+MotorDC motorDC_control;
+ServoControl servo_control;
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PC13
