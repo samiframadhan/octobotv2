@@ -12,12 +12,3 @@ public:
     void setup(int pinA, int pinB);
     void set_direction(int direction);
 };
-
-MotorDC::MotorDC(/* args */):
-pinA{0}, pinB{0}
-{
-}
-
-MotorDC::~MotorDC()
-{
-}

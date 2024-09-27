@@ -1,5 +1,14 @@
-#include <Arduino.h>
 #include <distance.h>
+
+
+DistanceSensor::DistanceSensor(void) : 
+interface{nullptr}, data_buffer{0}, cs{0}
+{
+}
+
+DistanceSensor::~DistanceSensor()
+{
+}
 
 void DistanceSensor::setup_sensor(Stream &serialPort){
     if(!interface){
@@ -14,8 +23,7 @@ void DistanceSensor::setup_sensor(Stream &serialPort){
 }
 
 int DistanceSensor::get_distance(){
-    if (interface->available() > 0)
-  {
+  if (interface->available() > 0){
     sleep(4);
 
     if (interface->read() == 0xff)
@@ -34,5 +42,11 @@ int DistanceSensor::get_distance(){
         return 0;
       }
     }
+    else{
+      return 0;
+    }
+  }
+  else{
+    return 0;
   }
 }

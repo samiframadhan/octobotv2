@@ -8,15 +8,6 @@ private:
 public:
     ServoControl(/* args */);
     ~ServoControl();
-    void setup();
+    void setup(int pinPWM_);
     void set_length(int x);
 };
-
-ServoControl::ServoControl(/* args */):
-pinPWM{0}
-{
-}
-
-ServoControl::~ServoControl()
-{
-}

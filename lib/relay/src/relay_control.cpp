@@ -1,5 +1,13 @@
-#include <Arduino.h>
-#include <relay.h>
+#include <relay_control.h>
+
+Relay::Relay(/* args */):
+pin_1{0}, pin_2{0}, pin_3{0}, pin_4{0}, interface{nullptr}
+{
+}
+
+Relay::~Relay(){
+    
+}
 
 void Relay::setup(int pin1, int pin2, int pin3, int pin4){
     // TODO: Implement HAL_TIM_Encoder_Init manually. Read docs

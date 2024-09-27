@@ -16,12 +16,3 @@ public:
     void setup(int pins[4]);
     void set_channels(int x);
 };
-
-Relay::Relay(/* args */):
-pin_1{0}, pin_2{0}, pin_3{0}, pin_4{0}, interface{nullptr}
-{
-}
-
-Relay::~Relay()
-{
-}

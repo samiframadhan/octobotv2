@@ -1,7 +1,16 @@
-#include <Arduino.h>
 #include <servo.h>
 
-void ServoControl::setup(){
+ServoControl::ServoControl(/* args */):
+pinPWM{0}
+{
+}
+
+ServoControl::~ServoControl()
+{
+}
+
+void ServoControl::setup(int pinPWM_){
+    pinPWM = pinPWM_;
     pinMode(pinPWM, OUTPUT);
     analogWrite(pinPWM, LOW);
 }

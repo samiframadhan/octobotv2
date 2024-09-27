@@ -29,13 +29,18 @@
 #include <stm_interface/srv/motor_status.h>
 #include <stm_interface/srv/tool_status.h>
 
-#include <relay.h>
+#include <relay_control.h>
 #include <motordc.h>
 #include <servo.h>
+#include <distance.h>
+#include <flow.h>
 
 Relay relay_control;
 MotorDC motorDC_control;
 ServoControl servo_control;
+DistanceSensor distance_left;
+DistanceSensor distance_right;
+FlowSensor flow_sensor;
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PC13
@@ -98,26 +103,6 @@ void error_loop() {
 void flowPulseCounter(){
   pulseCount ++;
 }
-
-void control_motor(int direction) {
-  debug("Received motor direction: ");
-  debugln(direction);
-
-  digitalWrite(ACT_A1_PIN, LOW);
-  digitalWrite(ACT_A2_PIN, LOW);
-
-  if (direction == 1) {
-    digitalWrite(ACT_A1_PIN, HIGH);  
-    digitalWrite(ACT_A2_PIN, LOW); 
-  } else if (direction == 2) {
-    digitalWrite(ACT_A1_PIN, HIGH);
-    digitalWrite(ACT_A2_PIN, HIGH);
-  } else {
-    digitalWrite(ACT_A1_PIN, LOW);
-    digitalWrite(ACT_A2_PIN, LOW);
-  }
-}
-
 void flow_callback(rcl_timer_t * timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
@@ -172,6 +157,29 @@ void wire_callback(rcl_timer_t * timer, int64_t last_call_time) {
   }
 }
 
+#pragma region Replaced Functions
+
+void control_motor(int direction) {
+  debug("Received motor direction: ");
+  debugln(direction);
+
+  digitalWrite(ACT_A1_PIN, LOW);
+  digitalWrite(ACT_A2_PIN, LOW);
+
+  if (direction == 1) {
+    digitalWrite(ACT_A1_PIN, HIGH);  
+    digitalWrite(ACT_A2_PIN, LOW); 
+  } else if (direction == 2) {
+    digitalWrite(ACT_A1_PIN, HIGH);
+    digitalWrite(ACT_A2_PIN, HIGH);
+  } else {
+    digitalWrite(ACT_A1_PIN, LOW);
+    digitalWrite(ACT_A2_PIN, LOW);
+  }
+}
+
+#pragma endregion
+
 void gpioInit()
 {
   /** I2C */
@@ -185,12 +193,13 @@ void gpioInit()
 
 
   // 12V dc motor cytron
-  pinMode(ACT_A1_PIN, OUTPUT);
-  pinMode(ACT_A2_PIN, OUTPUT);
-  motorDC_control.setup(ACT_A1_PIN);
+  // pinMode(ACT_A1_PIN, OUTPUT);
+  // pinMode(ACT_A2_PIN, OUTPUT);
+  motorDC_control.setup(ACT_A1_PIN, ACT_A2_PIN);
 
   // lin-servo (pwm-out)
-  pinMode(LINEAR_SERVO_PIN, OUTPUT);
+  // pinMode(LINEAR_SERVO_PIN, OUTPUT);
+  servo_control.setup(LINEAR_SERVO_PIN);
 
   // flow sensor
   pinMode(FLOW_SENSOR_PIN, INPUT);
@@ -199,25 +208,25 @@ void gpioInit()
   pinMode(LED_PIN, OUTPUT);
 
   // switch
-  pinMode(RELAY_1, OUTPUT);
-  pinMode(RELAY_2, OUTPUT);
-  pinMode(RELAY_3, OUTPUT);
-  pinMode(RELAY_4, OUTPUT);
-
+  // pinMode(RELAY_1, OUTPUT);
+  // pinMode(RELAY_2, OUTPUT);
+  // pinMode(RELAY_3, OUTPUT);
+  // pinMode(RELAY_4, OUTPUT);
+  relay_control.setup(RELAY_1, RELAY_2, RELAY_3, RELAY_4);
 
 
 
   // 12V DC motor (cytron)
-  digitalWrite(ACT_A1_PIN, LOW);
-  digitalWrite(ACT_A2_PIN, LOW);
+  // digitalWrite(ACT_A1_PIN, LOW);
+  // digitalWrite(ACT_A2_PIN, LOW);
 
-  analogWrite(LINEAR_SERVO_PIN, LOW);
+  // analogWrite(LINEAR_SERVO_PIN, LOW);
   digitalWrite(LED_PIN, HIGH);
 
-  digitalWrite(RELAY_1, LOW);
-  digitalWrite(RELAY_2, LOW);
-  digitalWrite(RELAY_3, LOW);
-  digitalWrite(RELAY_4, LOW);
+  // digitalWrite(RELAY_1, LOW);
+  // digitalWrite(RELAY_2, LOW);
+  // digitalWrite(RELAY_3, LOW);
+  // digitalWrite(RELAY_4, LOW);
 
   // flow sensor pulse count
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
@@ -225,61 +234,68 @@ void gpioInit()
 }
 
 void get_distL(){
-  if (SerialL.available() > 0)
-  {
-    delay(4);
+  int distance = distance_left.get_distance();
+  distL.data = distance;
+  RCSOFTCHECK(rcl_publish(&distL_publisher, &distL, NULL));
+  // if (SerialL.available() > 0)
+  // {
+  //   delay(4);
 
-    if (SerialL.read() == 0xff)
-    {
-      dataL_buffer[0] = 0xff;
-      for (int i = 1; i < 4; i++) {
-        dataL_buffer[i] = SerialL.read();
-      }
+  //   if (SerialL.read() == 0xff)
+  //   {
+  //     dataL_buffer[0] = 0xff;
+  //     for (int i = 1; i < 4; i++) {
+  //       dataL_buffer[i] = SerialL.read();
+  //     }
 
-      csL = dataL_buffer[0] + dataL_buffer[1] + dataL_buffer[2];
+  //     csL = dataL_buffer[0] + dataL_buffer[1] + dataL_buffer[2];
 
-      if (dataL_buffer[3] == csL) {
-        distanceL = (dataL_buffer[1] << 8) + dataL_buffer[2];
+  //     if (dataL_buffer[3] == csL) {
+  //       distanceL = (dataL_buffer[1] << 8) + dataL_buffer[2];
 
-        debug("distL: ");
-        debug(distanceL);
-        debugln(" mm");
+  //       debug("distL: ");
+  //       debug(distanceL);
+  //       debugln(" mm");
 
-        distL.data = distanceL;
-        RCSOFTCHECK(rcl_publish(&distL_publisher, &distL, NULL));
-        // distL_pub.publish(&distL);
-      }
-    }
-  }
+  //       distL.data = distanceL;
+  //       RCSOFTCHECK(rcl_publish(&distL_publisher, &distL, NULL));
+  //       // distL_pub.publish(&distL);
+  //     }
+  //   }
+  // }
 }
 
 void get_distR(){
-  if (SerialR.available() > 0)
-  {
-    delay(4);
+  int distance = distance_right.get_distance();
+  distR.data = distance;
+  RCSOFTCHECK(rcl_publish(&distR_publisher, &distR, NULL));
 
-    if (SerialR.read() == 0xff)
-    {
-      dataR_buffer[0] = 0xff;
-      for (int i = 1; i < 4; i++) {
-        dataR_buffer[i] = SerialR.read();
-      }
+  // if (SerialR.available() > 0)
+  // {
+  //   delay(4);
 
-      csR = dataR_buffer[0] + dataR_buffer[1] + dataR_buffer[2];
+  //   if (SerialR.read() == 0xff)
+  //   {
+  //     dataR_buffer[0] = 0xff;
+  //     for (int i = 1; i < 4; i++) {
+  //       dataR_buffer[i] = SerialR.read();
+  //     }
 
-      if (dataR_buffer[3] == csR) {
-        distanceR = (dataR_buffer[1] << 8) + dataR_buffer[2];
+  //     csR = dataR_buffer[0] + dataR_buffer[1] + dataR_buffer[2];
 
-        debug("distR: ");
-        debug(distanceR);
-        debugln(" mm");
+  //     if (dataR_buffer[3] == csR) {
+  //       distanceR = (dataR_buffer[1] << 8) + dataR_buffer[2];
 
-        distR.data = distanceR;
-        RCSOFTCHECK(rcl_publish(&distR_publisher, &distR, NULL));
-        // distR_publisher.publish(&distR);
-      }
-    }
-  }
+  //       debug("distR: ");
+  //       debug(distanceR);
+  //       debugln(" mm");
+
+  //       distR.data = distanceR;
+  //       RCSOFTCHECK(rcl_publish(&distR_publisher, &distR, NULL));
+  //       // distR_publisher.publish(&distR);
+  //     }
+  //   }
+  // }
 }
 
 void pose_sub(const void * msgin){
@@ -289,18 +305,19 @@ void pose_sub(const void * msgin){
 }
 
 void motor_service_callback(const void * req, void * res){
-  if (motorFlag)
-  {
-    digitalWrite(ACT_A1_PIN, HIGH);
-    digitalWrite(ACT_A2_PIN, LOW);
-    // res.message = "motor: on";
-  }
-  else
-  {
-    digitalWrite(ACT_A1_PIN, LOW);
-    digitalWrite(ACT_A2_PIN, LOW);
-    // res.message = "motor: off";
-  }
+  // if (motorFlag)
+  // {
+  //   digitalWrite(ACT_A1_PIN, HIGH);
+  //   digitalWrite(ACT_A2_PIN, LOW);
+  //   // res.message = "motor: on";
+  // }
+  // else
+  // {
+  //   digitalWrite(ACT_A1_PIN, LOW);
+  //   digitalWrite(ACT_A2_PIN, LOW);
+  //   // res.message = "motor: off";
+  // }
+  motorDC_control.set_direction(motorFlag);
   motorFlag = !motorFlag;
 
   // motor_status_res.message = ;
@@ -358,33 +375,8 @@ void relay_service_callback(const void * req, void * res){
 }
 
 void motor_sub(const void * msgin){
-  control_motor(motor_dir_msg.data);
-}
-
-void controlLinServo(int posedata)
-{
-  if (millis() - prev_servo_millis > SERVO_DELAY)
-  {
-    if (posedata <= 0) {
-      servoFlag = true;
-    } else if (posedata >= 255) {
-      servoFlag = false;
-    }
-
-    debug("servoFlag: ");
-    debug(servoFlag);
-    debug(" | servoPosedata:" );
-    debugln(posedata);
-
-    analogWrite(LINEAR_SERVO_PIN, posedata);
-
-    if (servoFlag == true) {
-      posedata++;
-    } else {
-      posedata--;
-    }
-    prev_servo_millis = millis();
-  }
+  motorDC_control.set_direction(motor_dir_msg.data);
+  // control_motor(motor_dir_msg.data);
 }
 
 #pragma endregion
@@ -401,6 +393,8 @@ void setup()
   Serial.begin(57600);
   SerialL.begin(9600);
   SerialR.begin(9600);
+  distance_left.setup_sensor(SerialL);
+  distance_right.setup_sensor(SerialR);
 
   #pragma region Micro ROS Initialization
   set_microros_serial_transports(Serial);
@@ -412,8 +406,6 @@ void setup()
 
   // create node
   RCCHECK(rclc_node_init_default(&node, "micro_ros_node", "", &support));
-
-  #pragma endregion
 
   #pragma region Publishers
   // create publisher
@@ -500,6 +492,8 @@ void setup()
   
   #pragma endregion
 
+  #pragma endregion
+
   if(digitalPinToInterrupt(FLOW_SENSOR_PIN) == NOT_AN_INTERRUPT){
     debug("Pin ");
     debug(FLOW_SENSOR_PIN);
@@ -510,18 +504,12 @@ void setup()
   }
 
   #pragma endregion
-
-  #pragma region Dry_STM
-
-  
-
-  #pragma endregion
 }
 
 void loop()
 {
   RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10)));
-  controlLinServo(pose);
+  servo_control.set_length(pose);
   get_distL();
   get_distR();
 }

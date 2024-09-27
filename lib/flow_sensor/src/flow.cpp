@@ -1,5 +1,13 @@
-#include <Arduino.h>
 #include <flow.h>
+
+FlowSensor::FlowSensor(/* args */):
+saved_time{0}, ppr{0}, pinFlow{0}, p{}, port{nullptr}
+{
+}
+
+FlowSensor::~FlowSensor()
+{
+}
 
 void FlowSensor::setup_sensor(int pinFlowSet){
     // TODO: Implement HAL_TIM_Encoder_Init manually. Read docs
@@ -32,7 +40,7 @@ float FlowSensor::get_flow(){
     PinName p = digitalPinToPinName(pinFlow);
     GPIO_TypeDef *port = set_GPIO_Port_Clock(STM_PORT(p));
     if(!port){
-        return;
+        return 0;
     }
     disable_interrupt();
     long int diff_time = millis() - saved_time;

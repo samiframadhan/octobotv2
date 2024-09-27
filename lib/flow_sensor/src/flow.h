@@ -19,12 +19,3 @@ public:
     void setup_sensor(int pinFlow);
     static void flowPulseCounter();
 };
-
-FlowSensor::FlowSensor(/* args */):
-saved_time{0}, ppr{0}, pinFlow{0}, p{}, port{nullptr}
-{
-}
-
-FlowSensor::~FlowSensor()
-{
-}
