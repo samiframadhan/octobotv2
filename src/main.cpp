@@ -113,7 +113,6 @@ void flow_callback(rcl_timer_t * timer, int64_t last_call_time) {
     flowRate = ((FLOW_DELAY / (millis() - prev_flow_millis)) * pulseCount) / FLOW_CONSTANT;
     prev_flow_millis = millis();
 
-
     flowRate_ml = (flowRate / 60) * 1000;
     totalVolume  += flowRate_ml;
 
@@ -157,29 +156,6 @@ void wire_callback(rcl_timer_t * timer, int64_t last_call_time) {
   }
 }
 
-#pragma region Replaced Functions
-
-void control_motor(int direction) {
-  debug("Received motor direction: ");
-  debugln(direction);
-
-  digitalWrite(ACT_A1_PIN, LOW);
-  digitalWrite(ACT_A2_PIN, LOW);
-
-  if (direction == 1) {
-    digitalWrite(ACT_A1_PIN, HIGH);  
-    digitalWrite(ACT_A2_PIN, LOW); 
-  } else if (direction == 2) {
-    digitalWrite(ACT_A1_PIN, HIGH);
-    digitalWrite(ACT_A2_PIN, HIGH);
-  } else {
-    digitalWrite(ACT_A1_PIN, LOW);
-    digitalWrite(ACT_A2_PIN, LOW);
-  }
-}
-
-#pragma endregion
-
 void gpioInit()
 {
   /** I2C */
@@ -193,12 +169,9 @@ void gpioInit()
 
 
   // 12V dc motor cytron
-  // pinMode(ACT_A1_PIN, OUTPUT);
-  // pinMode(ACT_A2_PIN, OUTPUT);
   motorDC_control.setup(ACT_A1_PIN, ACT_A2_PIN);
 
   // lin-servo (pwm-out)
-  // pinMode(LINEAR_SERVO_PIN, OUTPUT);
   servo_control.setup(LINEAR_SERVO_PIN);
 
   // flow sensor
@@ -208,25 +181,10 @@ void gpioInit()
   pinMode(LED_PIN, OUTPUT);
 
   // switch
-  // pinMode(RELAY_1, OUTPUT);
-  // pinMode(RELAY_2, OUTPUT);
-  // pinMode(RELAY_3, OUTPUT);
-  // pinMode(RELAY_4, OUTPUT);
   relay_control.setup(RELAY_1, RELAY_2, RELAY_3, RELAY_4);
 
-
-
   // 12V DC motor (cytron)
-  // digitalWrite(ACT_A1_PIN, LOW);
-  // digitalWrite(ACT_A2_PIN, LOW);
-
-  // analogWrite(LINEAR_SERVO_PIN, LOW);
   digitalWrite(LED_PIN, HIGH);
-
-  // digitalWrite(RELAY_1, LOW);
-  // digitalWrite(RELAY_2, LOW);
-  // digitalWrite(RELAY_3, LOW);
-  // digitalWrite(RELAY_4, LOW);
 
   // flow sensor pulse count
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
@@ -237,65 +195,12 @@ void get_distL(){
   int distance = distance_left.get_distance();
   distL.data = distance;
   RCSOFTCHECK(rcl_publish(&distL_publisher, &distL, NULL));
-  // if (SerialL.available() > 0)
-  // {
-  //   delay(4);
-
-  //   if (SerialL.read() == 0xff)
-  //   {
-  //     dataL_buffer[0] = 0xff;
-  //     for (int i = 1; i < 4; i++) {
-  //       dataL_buffer[i] = SerialL.read();
-  //     }
-
-  //     csL = dataL_buffer[0] + dataL_buffer[1] + dataL_buffer[2];
-
-  //     if (dataL_buffer[3] == csL) {
-  //       distanceL = (dataL_buffer[1] << 8) + dataL_buffer[2];
-
-  //       debug("distL: ");
-  //       debug(distanceL);
-  //       debugln(" mm");
-
-  //       distL.data = distanceL;
-  //       RCSOFTCHECK(rcl_publish(&distL_publisher, &distL, NULL));
-  //       // distL_pub.publish(&distL);
-  //     }
-  //   }
-  // }
 }
 
 void get_distR(){
   int distance = distance_right.get_distance();
   distR.data = distance;
   RCSOFTCHECK(rcl_publish(&distR_publisher, &distR, NULL));
-
-  // if (SerialR.available() > 0)
-  // {
-  //   delay(4);
-
-  //   if (SerialR.read() == 0xff)
-  //   {
-  //     dataR_buffer[0] = 0xff;
-  //     for (int i = 1; i < 4; i++) {
-  //       dataR_buffer[i] = SerialR.read();
-  //     }
-
-  //     csR = dataR_buffer[0] + dataR_buffer[1] + dataR_buffer[2];
-
-  //     if (dataR_buffer[3] == csR) {
-  //       distanceR = (dataR_buffer[1] << 8) + dataR_buffer[2];
-
-  //       debug("distR: ");
-  //       debug(distanceR);
-  //       debugln(" mm");
-
-  //       distR.data = distanceR;
-  //       RCSOFTCHECK(rcl_publish(&distR_publisher, &distR, NULL));
-  //       // distR_publisher.publish(&distR);
-  //     }
-  //   }
-  // }
 }
 
 void pose_sub(const void * msgin){
@@ -305,30 +210,10 @@ void pose_sub(const void * msgin){
 }
 
 void motor_service_callback(const void * req, void * res){
-  // if (motorFlag)
-  // {
-  //   digitalWrite(ACT_A1_PIN, HIGH);
-  //   digitalWrite(ACT_A2_PIN, LOW);
-  //   // res.message = "motor: on";
-  // }
-  // else
-  // {
-  //   digitalWrite(ACT_A1_PIN, LOW);
-  //   digitalWrite(ACT_A2_PIN, LOW);
-  //   // res.message = "motor: off";
-  // }
   motorDC_control.set_direction(motorFlag);
   motorFlag = !motorFlag;
 
-  // motor_status_res.message = ;
-  // rosidl_runtime_c__String string;
-  // string.data = "success!";
-  // string.size = sizeof(string.data);
-
-  // motor_status_res.message = string;
   motor_status_res.success = true;
-
-  // res.success = true;
 }
 
 void relay_service_callback(const void * req, void * res){
@@ -376,7 +261,6 @@ void relay_service_callback(const void * req, void * res){
 
 void motor_sub(const void * msgin){
   motorDC_control.set_direction(motor_dir_msg.data);
-  // control_motor(motor_dir_msg.data);
 }
 
 #pragma endregion
