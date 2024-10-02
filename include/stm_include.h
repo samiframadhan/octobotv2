@@ -3,6 +3,29 @@
 //#include <SoftwareSerial.h>
 #include "ADS1X15.h"
 
+#include <micro_ros_platformio.h>
+
+#include <rcl/rcl.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
+
+#include <std_msgs/msg/int8.h>
+#include <std_msgs/msg/int32.h>
+#include <std_msgs/msg/int64.h>
+#include <std_msgs/msg/float32.h>
+
+#include <std_srvs/srv/trigger.h>
+#include <stm_interface/srv/relay_control.h>
+#include <stm_interface/srv/motor_status.h>
+#include <stm_interface/srv/tool_status.h>
+
+#include <relay_control.h>
+#include <motordc.h>
+#include <servo.h>
+#include <distance.h>
+#include <flow.h>
+
+
 /*************************** <UART> ***************************/
 /**
   tx1 : pa9, pa15, pb6
@@ -90,6 +113,13 @@
 
 
 /*************************** <end define> ***************************/
+
+Relay relay_control;
+MotorDC motorDC_control;
+ServoControl servo_control;
+DistanceSensor distance_left;
+DistanceSensor distance_right;
+FlowSensor flow_sensor;
 
 HardwareSerial SerialL( RX2_PIN , TX2_PIN);
 HardwareSerial SerialR( RX6_PIN , TX6_PIN);

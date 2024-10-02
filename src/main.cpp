@@ -4,6 +4,8 @@
  * then off for one second, repeatedly.
  */
 
+#define USE_FREERTOS
+// #undef USE_FREERTOS
 #define STM_CODE 0
 // STM Only = 0
 // Dry STM = 1
@@ -11,36 +13,11 @@
 #include <Arduino.h>
 
 #include <stm_include.h>
+
+#ifdef USE_FREERTOS
+#include <STM32FreeRTOS.h>
+#endif
 // #include <FreeRTOS.h>
-
-#include <micro_ros_platformio.h>
-
-#include <rcl/rcl.h>
-#include <rclc/rclc.h>
-#include <rclc/executor.h>
-
-#include <std_msgs/msg/int8.h>
-#include <std_msgs/msg/int32.h>
-#include <std_msgs/msg/int64.h>
-#include <std_msgs/msg/float32.h>
-
-#include <std_srvs/srv/trigger.h>
-#include <stm_interface/srv/relay_control.h>
-#include <stm_interface/srv/motor_status.h>
-#include <stm_interface/srv/tool_status.h>
-
-#include <relay_control.h>
-#include <motordc.h>
-#include <servo.h>
-#include <distance.h>
-#include <flow.h>
-
-Relay relay_control;
-MotorDC motorDC_control;
-ServoControl servo_control;
-DistanceSensor distance_left;
-DistanceSensor distance_right;
-FlowSensor flow_sensor;
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PC13
@@ -108,29 +85,30 @@ void flow_callback(rcl_timer_t * timer, int64_t last_call_time) {
   if (timer != NULL) {
     // RCSOFTCHECK(rcl_publish(&flow_publisher, &flowVal, NULL));
     // flowVal.data++;
-    detachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN));
+    // detachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN));
 
-    flowRate = ((FLOW_DELAY / (millis() - prev_flow_millis)) * pulseCount) / FLOW_CONSTANT;
-    prev_flow_millis = millis();
+    // flowRate = ((FLOW_DELAY / (millis() - prev_flow_millis)) * pulseCount) / FLOW_CONSTANT;
+    // prev_flow_millis = millis();
 
-    flowRate_ml = (flowRate / 60) * 1000;
-    totalVolume  += flowRate_ml;
+    // flowRate_ml = (flowRate / 60) * 1000;
+    // totalVolume  += flowRate_ml;
 
-    debug("flowRate: ");
-    debug(flowRate_ml);
-    debug(" mL/s | ");
+    // debug("flowRate: ");
+    // debug(flowRate_ml);
+    // debug(" mL/s | ");
 
 
-    debug("flowVolume: ");
-    debug(totalVolume);
-    debugln(" mL");
-    pulseCount = 0;
+    // debug("flowVolume: ");
+    // debug(totalVolume);
+    // debugln(" mL");
+    // pulseCount = 0;
 
-    flowVal.data = flowRate_ml;
+    float rflow = flow_sensor.get_flow();
+    flowVal.data = rflow;
     RCSOFTCHECK(rcl_publish(&flow_publisher, &flowVal, NULL));
-    // flow_pub.publish(&flowVal);
+    // // flow_pub.publish(&flowVal);
 
-    attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
+    // attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
   }
 }
 
@@ -187,7 +165,8 @@ void gpioInit()
   digitalWrite(LED_PIN, HIGH);
 
   // flow sensor pulse count
-  attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
+  flow_sensor.setup_sensor(FLOW_SENSOR_PIN);
+  // attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
 
 }
 
@@ -264,6 +243,57 @@ void motor_sub(const void * msgin){
 }
 
 #pragma endregion
+
+static void ros_loop(void* arg){
+  UNUSED(arg);
+  while (1)
+  {
+    RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10)));
+  }
+}
+
+static void servo_loop(void* arg){
+  UNUSED(arg);
+  while (1)
+  {
+    servo_control.set_length(pose);
+  }
+}
+
+static void motorDC_loop(void* arg){
+  UNUSED(arg);
+  while (1)
+  {
+    motorDC_control.set_direction(motor_dir_msg.data);
+  }
+}
+
+static void relay_loop(void* arg){
+  UNUSED(arg);
+  while (1)
+  {
+    relay_control.set_channels(relay_req.data);
+  }
+  
+}
+
+static void distance_left_loop(void* arg){
+  UNUSED(arg);
+  while (1)
+  {
+    get_distL();
+  }
+  
+}
+
+static void distance_right_loop(void* arg){
+  UNUSED(arg);
+  while (1)
+  {
+    get_distR();
+  }
+  
+}
 
 void setup()
 {
@@ -386,6 +416,19 @@ void setup()
   else{
     gpioInit();
   }
+
+  portBASE_TYPE s1, s2, s3, s4, s5;
+
+  s1 = xTaskCreate(ros_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+  s2 = xTaskCreate(distance_left_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+
+  s3 = xTaskCreate(distance_right_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 3, NULL);
+
+  s4 = xTaskCreate(relay_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 4, NULL);
+
+  s5 = xTaskCreate(motorDC_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 5, NULL);
+
 
   #pragma endregion
 }
