@@ -1,11 +1,11 @@
 #include <Arduino.h>
 
-#ifdef USE_FREERTOS
+// #ifdef USE_FREERTOS
 #include <STM32FreeRTOS.h>
 #define sleep(x) vTaskDelay(x / portTICK_PERIOD_MS)
-#else
-#define sleep(x) delay(x)
-#endif
+// #else
+// #define sleep(x) delay(x)
+// #endif
 
 class DistanceSensor
 {

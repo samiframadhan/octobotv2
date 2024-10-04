@@ -85,30 +85,30 @@ void flow_callback(rcl_timer_t * timer, int64_t last_call_time) {
   if (timer != NULL) {
     // RCSOFTCHECK(rcl_publish(&flow_publisher, &flowVal, NULL));
     // flowVal.data++;
-    // detachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN));
+    detachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN));
 
-    // flowRate = ((FLOW_DELAY / (millis() - prev_flow_millis)) * pulseCount) / FLOW_CONSTANT;
-    // prev_flow_millis = millis();
+    flowRate = ((FLOW_DELAY / (millis() - prev_flow_millis)) * pulseCount) / FLOW_CONSTANT;
+    prev_flow_millis = millis();
 
-    // flowRate_ml = (flowRate / 60) * 1000;
-    // totalVolume  += flowRate_ml;
+    flowRate_ml = (flowRate / 60) * 1000;
+    totalVolume  += flowRate_ml;
 
-    // debug("flowRate: ");
-    // debug(flowRate_ml);
-    // debug(" mL/s | ");
+    debug("flowRate: ");
+    debug(flowRate_ml);
+    debug(" mL/s | ");
 
 
-    // debug("flowVolume: ");
-    // debug(totalVolume);
-    // debugln(" mL");
-    // pulseCount = 0;
+    debug("flowVolume: ");
+    debug(totalVolume);
+    debugln(" mL");
+    pulseCount = 0;
 
-    float rflow = flow_sensor.get_flow();
-    flowVal.data = rflow;
+    // float rflow = flow_sensor.get_flow();
+    flowVal.data = flowRate_ml;
     RCSOFTCHECK(rcl_publish(&flow_publisher, &flowVal, NULL));
     // // flow_pub.publish(&flowVal);
 
-    // attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
+    attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
   }
 }
 
@@ -165,8 +165,8 @@ void gpioInit()
   digitalWrite(LED_PIN, HIGH);
 
   // flow sensor pulse count
-  flow_sensor.setup_sensor(FLOW_SENSOR_PIN);
-  // attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
+  // flow_sensor.setup_sensor(FLOW_SENSOR_PIN);
+  attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
 
 }
 
@@ -419,17 +419,17 @@ void setup()
 
   portBASE_TYPE s1, s2, s3, s4, s5;
 
-  s1 = xTaskCreate(ros_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  s1 = xTaskCreate(ros_loop, NULL, configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 3, NULL);
 
-  s2 = xTaskCreate(distance_left_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+  s2 = xTaskCreate(distance_left_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
-  s3 = xTaskCreate(distance_right_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 3, NULL);
+  s3 = xTaskCreate(distance_right_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
-  s4 = xTaskCreate(relay_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 4, NULL);
+  s4 = xTaskCreate(relay_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
-  s5 = xTaskCreate(motorDC_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 5, NULL);
+  s5 = xTaskCreate(motorDC_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
-
+  vTaskStartScheduler();
   #pragma endregion
 }
 

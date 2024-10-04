@@ -119,7 +119,7 @@ MotorDC motorDC_control;
 ServoControl servo_control;
 DistanceSensor distance_left;
 DistanceSensor distance_right;
-FlowSensor flow_sensor;
+// FlowSensor flow_sensor;
 
 HardwareSerial SerialL( RX2_PIN , TX2_PIN);
 HardwareSerial SerialR( RX6_PIN , TX6_PIN);
