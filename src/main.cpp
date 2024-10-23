@@ -80,6 +80,7 @@ void error_loop() {
 void flowPulseCounter(){
   pulseCount ++;
 }
+
 void flow_callback(rcl_timer_t * timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
@@ -116,7 +117,7 @@ void wire_callback(rcl_timer_t * timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
   if (timer != NULL) {
     RCSOFTCHECK(rcl_publish(&wire_publisher, &wireVal, NULL));
-    wireVal.data++;
+    // wireVal.data++;
     // int16_t adcVal = D_WIRE.readADC(0);
     // float mVolt = adcVal * (ADS_GAIN / ADC_VAL_15);
     // float mAmp = mVolt / MV_TO_AMP;
@@ -248,7 +249,8 @@ static void ros_loop(void* arg){
   UNUSED(arg);
   while (1)
   {
-    RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10)));
+    RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100)));
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
@@ -257,6 +259,7 @@ static void servo_loop(void* arg){
   while (1)
   {
     servo_control.set_length(pose);
+    vTaskDelay(pdMS_TO_TICKS(107));
   }
 }
 
@@ -265,6 +268,7 @@ static void motorDC_loop(void* arg){
   while (1)
   {
     motorDC_control.set_direction(motor_dir_msg.data);
+    vTaskDelay(pdMS_TO_TICKS(101));
   }
 }
 
@@ -273,6 +277,7 @@ static void relay_loop(void* arg){
   while (1)
   {
     relay_control.set_channels(relay_req.data);
+    vTaskDelay(pdMS_TO_TICKS(102));
   }
   
 }
@@ -282,6 +287,7 @@ static void distance_left_loop(void* arg){
   while (1)
   {
     get_distL();
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
   
 }
@@ -291,6 +297,7 @@ static void distance_right_loop(void* arg){
   while (1)
   {
     get_distR();
+    vTaskDelay(pdMS_TO_TICKS(104));
   }
   
 }
@@ -300,19 +307,25 @@ void setup()
   // initialize LED digital pin as an output.
 
   #pragma region STM_Only
+  // SerialUSB.begin();
 
   pinMode(PC13, OUTPUT);
   digitalWrite(PC13, HIGH);
   
-  Serial.begin(57600);
+  Serial1.begin(115200);
   SerialL.begin(9600);
   SerialR.begin(9600);
   distance_left.setup_sensor(SerialL);
   distance_right.setup_sensor(SerialR);
 
+  // while (!SerialUSB.available())
+  // {
+  //   delay(300);
+  //   SerialUSB.print(".");
+  // }
   #pragma region Micro ROS Initialization
-  set_microros_serial_transports(Serial);
-
+  set_microros_serial_transports(Serial1);
+  
   allocator = rcl_get_default_allocator();
 
   // create init_options
@@ -417,17 +430,17 @@ void setup()
     gpioInit();
   }
 
-  portBASE_TYPE s1, s2, s3, s4, s5;
+  portBASE_TYPE s1 = xTaskCreate(ros_loop, NULL, configMINIMAL_STACK_SIZE + 11000, NULL, 1, NULL);
 
-  s1 = xTaskCreate(ros_loop, NULL, configMINIMAL_STACK_SIZE + 2000, NULL, tskIDLE_PRIORITY + 3, NULL);
+  portBASE_TYPE s2 = xTaskCreate(distance_left_loop, NULL, configMINIMAL_STACK_SIZE, NULL, 2, NULL);
 
-  s2 = xTaskCreate(distance_left_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  portBASE_TYPE s3 = xTaskCreate(distance_right_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
-  s3 = xTaskCreate(distance_right_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  portBASE_TYPE s4 = xTaskCreate(servo_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
-  s4 = xTaskCreate(relay_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  portBASE_TYPE s5 = xTaskCreate(motorDC_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
-  s5 = xTaskCreate(motorDC_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+  portBASE_TYPE s6 = xTaskCreate(relay_loop, NULL, configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
 
   vTaskStartScheduler();
   #pragma endregion
@@ -435,8 +448,8 @@ void setup()
 
 void loop()
 {
-  RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10)));
-  servo_control.set_length(pose);
-  get_distL();
-  get_distR();
+  // RCSOFTCHECK(rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10)));
+  // servo_control.set_length(pose);
+  // get_distL();
+  // get_distR();
 }
