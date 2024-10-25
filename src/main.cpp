@@ -270,14 +270,17 @@ void ros_setup(){
   allocator = rcl_get_default_allocator();
 
   // create init_options
-  rcl_ret_t status = RCL_RET_ERROR;
-  while (status != RCL_RET_OK)
-  {
-    status = rclc_support_init(&support, 0, NULL, &allocator);
-    delay(500);
-  }
   // RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
+  rcl_ret_t is_successfull;
+  is_successfull = rclc_support_init(&support, 0, NULL, &allocator);
+  if (is_successfull != RCL_RET_OK)
+  while (is_successfull != RCL_RET_OK)
+  {
+    delay(100);
+    is_successfull = rclc_support_init(&support, 0, NULL, &allocator);
+  }
   
+
   // create node
   RCCHECK(rclc_node_init_default(&node, "micro_ros_node", "", &support));
 
