@@ -197,44 +197,6 @@ void motor_service_callback(const void * req, void * res){
 }
 
 void relay_service_callback(const void * req, void * res){
-  switch (relay_req.data)
-  {
-    // turn off everything
-    case 0:
-      digitalWrite(RELAY_1, LOW);
-      digitalWrite(RELAY_2, LOW);
-      digitalWrite(RELAY_3, LOW);
-      digitalWrite(RELAY_4, LOW);
-      break;
-
-    // RELAY_1
-    case 1:
-      delay(500);
-      digitalWrite(RELAY_1, HIGH - digitalRead(RELAY_1));
-      break;
-
-    // RELAY_2
-    case 2:
-      delay(500);
-      digitalWrite(RELAY_2, HIGH - digitalRead(RELAY_2));
-      break;
-
-    // RELAY_3
-    case 3:
-      delay(500);
-      digitalWrite(RELAY_3, HIGH - digitalRead(RELAY_3));
-      break;
-
-    // RELAY_4
-    case 4:
-      delay(500);
-      digitalWrite(RELAY_4, HIGH - digitalRead(RELAY_4));
-      break;
-
-    default:
-      break;
-  }
-
   digitalWrite(LED_PIN, HIGH - digitalRead(LED_PIN));
   relay_res.response = true;
 }
@@ -329,8 +291,14 @@ void setup()
   allocator = rcl_get_default_allocator();
 
   // create init_options
-  RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
-
+  rcl_ret_t status = RCL_RET_ERROR;
+  while (status != RCL_RET_OK)
+  {
+    status = rclc_support_init(&support, 0, NULL, &allocator);
+    delay(500);
+  }
+  // RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
+  
   // create node
   RCCHECK(rclc_node_init_default(&node, "micro_ros_node", "", &support));
 
