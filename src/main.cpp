@@ -153,22 +153,20 @@ void gpioInit()
   // lin-servo (pwm-out)
   servo_control.setup(LINEAR_SERVO_PIN);
 
+  // switch
+  relay_control.setup(RELAY_1, RELAY_2, RELAY_3, RELAY_4);
+
   // flow sensor
   pinMode(FLOW_SENSOR_PIN, INPUT);
 
   // inbuilt led
   pinMode(LED_PIN, OUTPUT);
 
-  // switch
-  relay_control.setup(RELAY_1, RELAY_2, RELAY_3, RELAY_4);
-
   // 12V DC motor (cytron)
   digitalWrite(LED_PIN, HIGH);
 
   // flow sensor pulse count
-  // flow_sensor.setup_sensor(FLOW_SENSOR_PIN);
   attachInterrupt(digitalPinToInterrupt(FLOW_SENSOR_PIN), flowPulseCounter, RISING);
-
 }
 
 void get_distL(){
@@ -197,6 +195,7 @@ void motor_service_callback(const void * req, void * res){
 }
 
 void relay_service_callback(const void * req, void * res){
+  relay_control.set_channels(relay_req.data);
   digitalWrite(LED_PIN, HIGH - digitalRead(LED_PIN));
   relay_res.response = true;
 }
@@ -264,27 +263,7 @@ static void distance_right_loop(void* arg){
   
 }
 
-void setup()
-{
-  // initialize LED digital pin as an output.
-
-  #pragma region STM_Only
-  // SerialUSB.begin();
-
-  pinMode(PC13, OUTPUT);
-  digitalWrite(PC13, HIGH);
-  
-  Serial1.begin(115200);
-  SerialL.begin(9600);
-  SerialR.begin(9600);
-  distance_left.setup_sensor(SerialL);
-  distance_right.setup_sensor(SerialR);
-
-  // while (!SerialUSB.available())
-  // {
-  //   delay(300);
-  //   SerialUSB.print(".");
-  // }
+void ros_setup(){
   #pragma region Micro ROS Initialization
   set_microros_serial_transports(Serial1);
   
@@ -384,10 +363,28 @@ void setup()
     &executor, &relay_service, &relay_req, &relay_res, relay_service_callback));
   RCCHECK(rclc_executor_add_timer(&executor, &flow_timer));
   RCCHECK(rclc_executor_add_timer(&executor, &wire_timer));
-  
   #pragma endregion
 
   #pragma endregion
+}
+
+void setup()
+{
+  // initialize LED digital pin as an output.
+
+  #pragma region STM_Only
+  // SerialUSB.begin();
+
+  pinMode(PC13, OUTPUT);
+  digitalWrite(PC13, HIGH);
+  
+  Serial1.begin(115200);
+  SerialL.begin(9600);
+  SerialR.begin(9600);
+  distance_left.setup_sensor(SerialL);
+  distance_right.setup_sensor(SerialR);
+
+  ros_setup();
 
   if(digitalPinToInterrupt(FLOW_SENSOR_PIN) == NOT_AN_INTERRUPT){
     debug("Pin ");
